@@ -100,7 +100,8 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
       return {
         score: 0,
         level: "Not Locked In",
-        color: "text-gray-400"
+        color: "text-gray-400",
+        tierRank: 0 // Adding tier rank for sorting (0 = lowest)
       };
     }
 
@@ -111,7 +112,8 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
       return {
         score: 0,
         level: "No Release Data",
-        color: "text-gray-400"
+        color: "text-gray-400",
+        tierRank: 0
       };
     }
 
@@ -129,7 +131,8 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
       return {
         score: 0,
         level: "No Valid Dates",
-        color: "text-gray-400"
+        color: "text-gray-400",
+        tierRank: 0
       };
     }
 
@@ -146,7 +149,8 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
       return {
         score: validSongs.length > 3 ? 65 : 40,
         level: validSongs.length > 3 ? "Single Project Collaborator" : "Occasional Collaborator",
-        color: validSongs.length > 3 ? "text-blue-400" : "text-gray-400"
+        color: validSongs.length > 3 ? "text-blue-400" : "text-gray-400",
+        tierRank: 1 // Rank 1 for occasional/single project collaborators (below bronze)
       };
     }
     
@@ -205,28 +209,34 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
     );
     
     // Determine "Locked In" level based on score with higher thresholds
-    let level, color;
+    let level, color, tierRank;
     if (totalScore >= 92) {
       level = "Diamond Locked 💎";
       color = "text-blue-300";
+      tierRank = 6; // Highest tier
     } else if (totalScore >= 78) {
       level = "Platinum Locked ⭐";
       color = "text-purple-400";
+      tierRank = 5;
     } else if (totalScore >= 55) {
       level = "Gold Locked 🔒";
       color = "text-yellow-400";
+      tierRank = 4;
     } else if (totalScore >= 35) {
       level = "Silver Locked 🔓";
       color = "text-gray-300";
+      tierRank = 3;
     } else {
       level = "Bronze Locked 🔗";
       color = "text-orange-400";
+      tierRank = 2; // Bronze is still above occasional collaborator
     }
     
     return {
       score: Math.round(totalScore),
       level,
-      color
+      color,
+      tierRank
     };
   };
 

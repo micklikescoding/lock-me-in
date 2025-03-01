@@ -1,6 +1,8 @@
-# Lock Me In
+# Let's Lock In
 
 A Next.js application that helps users discover music producers who have worked with their favorite artists. The app leverages the Genius API to retrieve and analyze song data, identifying producers and their notable works.
+
+Visit at [letslock.in](https://letslock.in)
 
 ## Features
 

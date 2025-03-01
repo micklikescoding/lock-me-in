@@ -7,14 +7,14 @@ import { artistSongsCache } from '@/app/lib/cache';
 function calculateLockedInRating(songs, artistName) {
   // If no songs, return 0
   if (!songs.length || !artistName) {
-    return 0;
+    return { score: 0, tierRank: 0 };
   }
 
   // Parse release dates from songs and filter out invalid dates
   const validSongs = songs.filter(song => song.release_date);
   
   if (!validSongs.length) {
-    return 0;
+    return { score: 0, tierRank: 0 };
   }
 
   // Convert release dates to timestamps
@@ -27,7 +27,7 @@ function calculateLockedInRating(songs, artistName) {
   }).filter(date => date > 0);
 
   if (!releaseDates.length) {
-    return 0;
+    return { score: 0, tierRank: 0 };
   }
 
   // Find the earliest and latest release dates
@@ -39,7 +39,11 @@ function calculateLockedInRating(songs, artistName) {
   
   // Handle very short timespans
   if (timespan < 1000 * 60 * 60 * 24) { 
-    return validSongs.length > 3 ? 65 : 40;
+    // Return score and tier rank for occasional/single project collaborators
+    return { 
+      score: validSongs.length > 3 ? 65 : 40, 
+      tierRank: 1 // Occasional collaborator tier rank
+    };
   }
   
   // Lower base score per song
@@ -80,7 +84,24 @@ function calculateLockedInRating(songs, artistName) {
     consistencyBonus
   );
   
-  return Math.round(totalScore);
+  // Determine tier rank based on score
+  let tierRank;
+  if (totalScore >= 92) {
+    tierRank = 6; // Diamond
+  } else if (totalScore >= 78) {
+    tierRank = 5; // Platinum
+  } else if (totalScore >= 55) {
+    tierRank = 4; // Gold
+  } else if (totalScore >= 35) {
+    tierRank = 3; // Silver
+  } else {
+    tierRank = 2; // Bronze (still higher than occasional collaborator)
+  }
+  
+  return { 
+    score: Math.round(totalScore),
+    tierRank
+  };
 }
 
 export async function GET(request: Request) {
@@ -147,13 +168,24 @@ export async function GET(request: Request) {
     }).filter(producer => producer.notable_songs.length > 0);
 
     // NEW: Calculate Locked In rating for each producer and add to object
-    const producersWithRating = contextProducers.map(producer => ({
-      ...producer,
-      lockedInRating: calculateLockedInRating(producer.notable_songs, artist.name)
-    }));
+    const producersWithRating = contextProducers.map(producer => {
+      const ratingData = calculateLockedInRating(producer.notable_songs, artist.name);
+      return {
+        ...producer,
+        lockedInRating: ratingData.score,
+        tierRank: ratingData.tierRank
+      };
+    });
 
-    // NEW: Sort producers by Locked In rating instead of just song count
-    producersWithRating.sort((a, b) => b.lockedInRating - a.lockedInRating);
+    // NEW: Sort producers by tier rank first, then by Locked In score
+    producersWithRating.sort((a, b) => {
+      // First compare tier ranks (higher tier rank comes first)
+      if (b.tierRank !== a.tierRank) {
+        return b.tierRank - a.tierRank;
+      }
+      // If tier ranks are the same, sort by score
+      return b.lockedInRating - a.lockedInRating;
+    });
 
     // End the timer for the entire search request
     const duration = endTimer('API:search');

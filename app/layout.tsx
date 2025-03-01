@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Lock Me In | Find Music Producers by Artist",
+  title: "Let's Lock In | Find Music Producers by Artist",
   description: "Discover producers who have worked with your favorite artists and connect with them",
 };
 
@@ -22,7 +22,7 @@ export default function RootLayout({
         </main>
         <footer className="container mx-auto px-4 py-6 mt-8 border-t border-gray-800 text-center text-gray-500 text-sm">
           <p>
-            Lock Me In uses data from{' '}
+            Let's Lock In uses data from{' '}
             <a 
               href="https://genius.com" 
               target="_blank" 
@@ -33,7 +33,7 @@ export default function RootLayout({
             </a>
           </p>
           <p className="mt-2">
-            &copy; {new Date().getFullYear()} Lock Me In
+            &copy; {new Date().getFullYear()} Let's Lock In
           </p>
         </footer>
       </body>
