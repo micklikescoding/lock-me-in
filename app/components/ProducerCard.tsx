@@ -142,10 +142,11 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
     
     // If timespan is too small (e.g., only one song or songs released on same day)
     if (timespan < 1000 * 60 * 60 * 24) { // less than a day
+      // Less generous rating for single-day multiple tracks
       return {
-        score: validSongs.length > 2 ? 80 : 50,
-        level: validSongs.length > 2 ? "Frequent Collaborator" : "Occasional Collaborator",
-        color: validSongs.length > 2 ? "text-purple-400" : "text-blue-400"
+        score: validSongs.length > 3 ? 65 : 40,
+        level: validSongs.length > 3 ? "Single Project Collaborator" : "Occasional Collaborator",
+        color: validSongs.length > 3 ? "text-blue-400" : "text-gray-400"
       };
     }
     
@@ -155,36 +156,66 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
       return relativePosition;
     });
     
-    // Calculate weighted score based on number of songs and their recency
-    const baseScorePerSong = 20; // Base points per song
-    const maxRecencyBonus = 30; // Maximum bonus points for recency
+    // IMPROVED RATING SYSTEM
+    // Lower base score per song
+    const baseScorePerSong = 12; // Reduced from 20 to 12
     
-    // Calculate base score from number of songs
-    const songCountScore = Math.min(65, validSongs.length * baseScorePerSong);
+    // Higher cap for song count to require more songs for high ratings
+    const maxSongScore = 60; // Slightly lower max song score
     
-    // Calculate recency bonus (average of recency scores, weighted toward recent songs)
-    const avgRecency = recencyScores.reduce((sum, score) => sum + score, 0) / recencyScores.length;
-    const recencyBonus = avgRecency * maxRecencyBonus;
+    // Calculate base score from number of songs (capped lower)
+    const songCountScore = Math.min(maxSongScore, validSongs.length * baseScorePerSong);
     
-    // Calculate consistency bonus (for working across different periods)
+    // Calculate recency distribution - are songs spread out or clustered?
+    // Sort the dates and check gaps between them
+    const sortedDates = [...releaseDates].sort((a, b) => a - b);
+    let distributionScore = 0;
+    
+    // If they have 3+ songs, check distribution
+    if (sortedDates.length >= 3) {
+      const dateGaps = [];
+      for (let i = 1; i < sortedDates.length; i++) {
+        // Calculate gap as percentage of total timespan
+        const gap = (sortedDates[i] - sortedDates[i-1]) / timespan;
+        dateGaps.push(gap);
+      }
+      
+      // Average gap - smaller is more clustered, larger is more spread
+      const avgGap = dateGaps.reduce((sum, gap) => sum + gap, 0) / dateGaps.length;
+      
+      // More evenly distributed = higher score (up to 15 points)
+      distributionScore = Math.min(15, (1 - avgGap) * 20);
+    }
+    
+    // Time span bonus - longer relationship = higher score
+    // Convert timespan to years for better scaling
+    const timespanYears = timespan / (1000 * 60 * 60 * 24 * 365);
+    const timespanBonus = Math.min(10, timespanYears * 4);
+    
+    // Consistency bonus (for working across different years)
     const uniqueYears = new Set(validSongs.map(song => song.release_date?.slice(0, 4))).size;
-    const consistencyBonus = Math.min(15, uniqueYears * 5);
+    const consistencyBonus = Math.min(15, uniqueYears * 4);
     
     // Calculate final score (cap at 100)
-    const totalScore = Math.min(100, songCountScore + recencyBonus + consistencyBonus);
+    const totalScore = Math.min(100, 
+      songCountScore + 
+      distributionScore + 
+      timespanBonus + 
+      consistencyBonus
+    );
     
-    // Determine "Locked In" level based on score
+    // Determine "Locked In" level based on score with higher thresholds
     let level, color;
-    if (totalScore >= 90) {
+    if (totalScore >= 92) {
       level = "Diamond Locked 💎";
       color = "text-blue-300";
-    } else if (totalScore >= 75) {
+    } else if (totalScore >= 78) {
       level = "Platinum Locked ⭐";
       color = "text-purple-400";
-    } else if (totalScore >= 50) {
+    } else if (totalScore >= 55) {
       level = "Gold Locked 🔒";
       color = "text-yellow-400";
-    } else if (totalScore >= 25) {
+    } else if (totalScore >= 35) {
       level = "Silver Locked 🔓";
       color = "text-gray-300";
     } else {

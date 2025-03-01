@@ -3,6 +3,86 @@ import { searchArtist, getAllArtistSongs, getProducersFromSongs } from '@/app/li
 import { logInfo, logError, startTimer, endTimer } from '@/app/lib/logger';
 import { artistSongsCache } from '@/app/lib/cache';
 
+// Calculate Locked In rating for sorting
+function calculateLockedInRating(songs, artistName) {
+  // If no songs, return 0
+  if (!songs.length || !artistName) {
+    return 0;
+  }
+
+  // Parse release dates from songs and filter out invalid dates
+  const validSongs = songs.filter(song => song.release_date);
+  
+  if (!validSongs.length) {
+    return 0;
+  }
+
+  // Convert release dates to timestamps
+  const releaseDates = validSongs.map(song => {
+    try {
+      return new Date(song.release_date || "").getTime();
+    } catch (error) {
+      return 0;
+    }
+  }).filter(date => date > 0);
+
+  if (!releaseDates.length) {
+    return 0;
+  }
+
+  // Find the earliest and latest release dates
+  const earliestDate = Math.min(...releaseDates);
+  const latestDate = Math.max(...releaseDates);
+  
+  // Calculate the total timespan
+  const timespan = latestDate - earliestDate;
+  
+  // Handle very short timespans
+  if (timespan < 1000 * 60 * 60 * 24) { 
+    return validSongs.length > 3 ? 65 : 40;
+  }
+  
+  // Lower base score per song
+  const baseScorePerSong = 12;
+  const maxSongScore = 60;
+  
+  // Calculate base score from number of songs
+  const songCountScore = Math.min(maxSongScore, validSongs.length * baseScorePerSong);
+  
+  // Calculate distribution score
+  const sortedDates = [...releaseDates].sort((a, b) => a - b);
+  let distributionScore = 0;
+  
+  if (sortedDates.length >= 3) {
+    const dateGaps = [];
+    for (let i = 1; i < sortedDates.length; i++) {
+      const gap = (sortedDates[i] - sortedDates[i-1]) / timespan;
+      dateGaps.push(gap);
+    }
+    
+    const avgGap = dateGaps.reduce((sum, gap) => sum + gap, 0) / dateGaps.length;
+    distributionScore = Math.min(15, (1 - avgGap) * 20);
+  }
+  
+  // Time span bonus
+  const timespanYears = timespan / (1000 * 60 * 60 * 24 * 365);
+  const timespanBonus = Math.min(10, timespanYears * 4);
+  
+  // Consistency bonus
+  const uniqueYears = new Set(validSongs.map(song => song.release_date?.slice(0, 4))).size;
+  const consistencyBonus = Math.min(15, uniqueYears * 4);
+  
+  // Calculate final score
+  const totalScore = Math.min(100, 
+    songCountScore + 
+    distributionScore + 
+    timespanBonus + 
+    consistencyBonus
+  );
+  
+  return Math.round(totalScore);
+}
+
 export async function GET(request: Request) {
   // Start a timer for the entire search request
   startTimer('API:search');
@@ -66,8 +146,14 @@ export async function GET(request: Request) {
       };
     }).filter(producer => producer.notable_songs.length > 0);
 
-    // Sort producers by number of songs for this specific artist
-    contextProducers.sort((a, b) => b.notable_songs.length - a.notable_songs.length);
+    // NEW: Calculate Locked In rating for each producer and add to object
+    const producersWithRating = contextProducers.map(producer => ({
+      ...producer,
+      lockedInRating: calculateLockedInRating(producer.notable_songs, artist.name)
+    }));
+
+    // NEW: Sort producers by Locked In rating instead of just song count
+    producersWithRating.sort((a, b) => b.lockedInRating - a.lockedInRating);
 
     // End the timer for the entire search request
     const duration = endTimer('API:search');
@@ -78,11 +164,11 @@ export async function GET(request: Request) {
         name: artist.name,
         image_url: artist.image_url
       },
-      producers: contextProducers,
+      producers: producersWithRating,
       performance: {
         total_time_ms: duration,
         song_count: songs.length,
-        producer_count: contextProducers.length
+        producer_count: producersWithRating.length
       },
       isFirstTimeSearch: isFirstTimeSearch
     });
