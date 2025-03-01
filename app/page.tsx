@@ -1,101 +1,134 @@
-import Image from "next/image";
+'use client';
 
+import { useState } from 'react';
+import SearchInput from './components/SearchInput';
+import ProducerCard from './components/ProducerCard';
+import PerformanceStats from './components/PerformanceStats';
+import { Producer } from './lib/genius';
+
+// Main page component with search functionality
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [isLoading, setIsLoading] = useState(false);
+  const [producers, setProducers] = useState<Producer[]>([]);
+  const [artistName, setArtistName] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [performance, setPerformance] = useState<{
+    total_time_ms: number;
+    song_count: number;
+    producer_count: number;
+  } | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // Handle the search submission
+  const handleSearch = async (query: string) => {
+    // Reset state for new search
+    setIsLoading(true);
+    setError(null);
+    setProducers([]);
+    setArtistName(null);
+    setPerformance(null);
+
+    try {
+      // Call the search API endpoint
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to search for producers');
+      }
+
+      // Update state with the search results
+      setProducers(data.producers);
+      setArtistName(data.artist.name);
+      setPerformance(data.performance);
+    } catch (err) {
+      // Handle any errors
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      // Set loading to false regardless of outcome
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen">
+      {/* Header section */}
+      <header className="mb-12 text-center">
+        <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
+          Lock Me In
+        </h1>
+        <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+          Find producers who have worked with your favorite artists
+        </p>
+      </header>
+
+      {/* Search input */}
+      <div className="mb-10">
+        <SearchInput onSearch={handleSearch} isLoading={isLoading} />
+      </div>
+
+      {/* Performance stats */}
+      {performance && (
+        <PerformanceStats
+          totalTimeMs={performance.total_time_ms}
+          songCount={performance.song_count}
+          producerCount={performance.producer_count}
+        />
+      )}
+
+      {/* Results heading */}
+      {artistName && producers.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold">
+            Producers who worked with <span className="text-blue-400">{artistName}</span>
+          </h2>
+          <p className="text-gray-400">Found {producers.length} producers</p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
+
+      {/* Error message */}
+      {error && (
+        <div className="text-center p-4 bg-red-900/30 border border-red-700 rounded-lg mb-8">
+          <p className="text-red-400">{error}</p>
+        </div>
+      )}
+
+      {/* Results grid */}
+      {producers.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {producers.map((producer) => (
+            <ProducerCard key={producer.id} producer={producer} />
+          ))}
+        </div>
+      )}
+
+      {/* Loading state */}
+      {isLoading && (
+        <div className="text-center p-12">
+          <div className="inline-block w-8 h-8 border-4 border-gray-600 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+          <p className="text-gray-400">Searching for producers...</p>
+          <p className="text-gray-500 text-sm mt-2">This may take a minute for popular artists</p>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!isLoading && !error && producers.length === 0 && !artistName && (
+        <div className="text-center text-gray-400 p-12 border border-gray-800 rounded-lg">
+          <p>Search for an artist to discover producers who have worked with them</p>
+          <p className="text-sm mt-2 text-gray-500">
+            Try artists like Drake, Taylor Swift, or Kendrick Lamar
+          </p>
+        </div>
+      )}
+
+      {/* No results found */}
+      {!isLoading && !error && producers.length === 0 && artistName && (
+        <div className="text-center text-gray-400 p-8 border border-gray-800 rounded-lg">
+          <p>No producers found for {artistName}</p>
+          <p className="text-sm mt-2 text-gray-500">
+            Try searching for a different artist
+          </p>
+        </div>
+      )}
     </div>
   );
 }

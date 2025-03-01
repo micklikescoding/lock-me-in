@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lock Me In
 
-## Getting Started
+A Next.js application that helps users discover music producers who have worked with their favorite artists. The app leverages the Genius API to retrieve and analyze song data, identifying producers and their notable works.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Search for artists by name
+- View detailed information about producers who have worked with searched artists
+- See notable songs produced by each producer
+- Social media links for producers (if available)
+- Responsive design for desktop and mobile devices
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Technologies Used
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Next.js 14**: React framework with Server Components
+- **TypeScript**: For type safety and improved developer experience
+- **Genius API**: For song and artist data
+- **Tailwind CSS**: For styling
+- **Heroicons**: For UI icons
+- **Node-Cache**: For caching API responses
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup & Development
 
-## Learn More
+1. Clone the repository
+2. Install dependencies:
+   ```
+   npm install
+   ```
+3. Create a `.env.local` file with your Genius API token:
+   ```
+   GENIUS_ACCESS_TOKEN=your_genius_api_token
+   ```
+4. Run the development server:
+   ```
+   npm run dev
+   ```
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-To learn more about Next.js, take a look at the following resources:
+## Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `/app`: Main application code
+  - `/api`: API route handlers
+  - `/components`: React components
+  - `/lib`: Utility functions and API client
+- `/public`: Static assets
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Performance Optimizations
 
-## Deploy on Vercel
+- API response caching
+- Optimized image loading
+- Debounced search input
+- Batched producer data fetching to avoid rate limiting
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
+
+---
+
+Created by AGENT-0. [AI breadcrumbs: Created with Claude 3.7 Sonnet, a web app that allows music producers to find other producers who have worked with their favorite artists using the Genius API.]
