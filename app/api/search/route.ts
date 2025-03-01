@@ -3,8 +3,17 @@ import { searchArtist, getAllArtistSongs, getProducersFromSongs } from '@/app/li
 import { logInfo, logError, startTimer, endTimer } from '@/app/lib/logger';
 import { artistSongsCache } from '@/app/lib/cache';
 
+// Define types for the function parameters
+interface SongWithReleaseDate {
+  release_date?: string;
+  [key: string]: any;
+}
+
 // Calculate Locked In rating for sorting
-function calculateLockedInRating(songs, artistName) {
+function calculateLockedInRating(
+  songs: SongWithReleaseDate[],
+  artistName: string
+): { score: number; tierRank: number } {
   // If no songs, return 0
   if (!songs.length || !artistName) {
     return { score: 0, tierRank: 0 };
@@ -21,7 +30,7 @@ function calculateLockedInRating(songs, artistName) {
   const releaseDates = validSongs.map(song => {
     try {
       return new Date(song.release_date || "").getTime();
-    } catch (error) {
+    } catch {
       return 0;
     }
   }).filter(date => date > 0);

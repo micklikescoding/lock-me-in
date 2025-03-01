@@ -12,8 +12,6 @@ export default function Home() {
   const [producers, setProducers] = useState<Producer[]>([]);
   const [artistName, setArtistName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isFirstTimeSearch, setIsFirstTimeSearch] = useState<boolean>(false);
-  const [currentQuery, setCurrentQuery] = useState<string | null>(null);
   const [knownSearches, setKnownSearches] = useState<Set<string>>(new Set());
   const [performance, setPerformance] = useState<{
     total_time_ms: number;
@@ -42,14 +40,6 @@ export default function Home() {
     setArtistName(null);
     setPerformance(null);
     
-    // Store the current query
-    setCurrentQuery(query);
-    
-    // Set provisional first-time status for UI purposes
-    // We'll show the message during loading if we've never seen this search locally
-    const mightBeFirstTime = !knownSearches.has(query.toLowerCase());
-    setIsFirstTimeSearch(mightBeFirstTime);
-
     try {
       // Call the search API endpoint
       const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
@@ -64,29 +54,20 @@ export default function Home() {
       setArtistName(data.artist.name);
       setPerformance(data.performance);
       
-      // Get the server's definitive answer
-      const isActuallyFirstTime = data.isFirstTimeSearch;
+      // Update our local knowledge for future searches
+      const newKnownSearches = new Set(knownSearches);
+      newKnownSearches.add(query.toLowerCase());
+      setKnownSearches(newKnownSearches);
       
-      // Update our local knowledge
-      if (isActuallyFirstTime || mightBeFirstTime) {
-        const newKnownSearches = new Set(knownSearches);
-        newKnownSearches.add(query.toLowerCase());
-        setKnownSearches(newKnownSearches);
-        
-        try {
-          localStorage.setItem('knownSearches', JSON.stringify([...newKnownSearches]));
-        } catch (error) {
-          console.error('Failed to save to localStorage', error);
-        }
+      try {
+        localStorage.setItem('knownSearches', JSON.stringify([...newKnownSearches]));
+      } catch (error) {
+        console.error('Failed to save to localStorage', error);
       }
       
-      // Keep showing the first-time message if the server confirms it was first time
-      setIsFirstTimeSearch(isActuallyFirstTime);
     } catch (err) {
       // Handle any errors
       setError(err instanceof Error ? err.message : 'An error occurred');
-      // Reset first-time flag on error
-      setIsFirstTimeSearch(false);
     } finally {
       // Set loading to false regardless of outcome
       setIsLoading(false);
@@ -98,7 +79,7 @@ export default function Home() {
       {/* Header section */}
       <header className="mb-8 text-center">
         <h1 className="text-4xl md:text-5xl font-bold mb-4 gradient-text from-blue-400 to-purple-600">
-          Let's Lock In 🎵
+          Let&apos;s Lock In 🎵
         </h1>
         <p className="text-xl text-gray-300 max-w-2xl mx-auto">
           Find producers who have worked with your favorite artists

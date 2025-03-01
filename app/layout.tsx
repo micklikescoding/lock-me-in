@@ -22,7 +22,7 @@ export default function RootLayout({
         </main>
         <footer className="container mx-auto px-4 py-6 mt-8 border-t border-gray-800 text-center text-gray-500 text-sm">
           <p>
-            Let's Lock In uses data from{' '}
+            Let&apos;s Lock In uses data from{' '}
             <a 
               href="https://genius.com" 
               target="_blank" 
@@ -33,7 +33,7 @@ export default function RootLayout({
             </a>
           </p>
           <p className="mt-2">
-            &copy; {new Date().getFullYear()} Let's Lock In
+            &copy; {new Date().getFullYear()} Let&apos;s Lock In
           </p>
         </footer>
       </body>

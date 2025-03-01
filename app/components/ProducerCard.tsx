@@ -121,8 +121,8 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
     const releaseDates = validSongs.map(song => {
       try {
         return new Date(song.release_date || "").getTime();
-      } catch (_) {
-        // Using underscore to indicate deliberately unused error variable
+      } catch {
+        // Using an empty catch clause as we don't need the error variable
         return 0;
       }
     }).filter(date => date > 0);
@@ -153,12 +153,6 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
         tierRank: 1 // Rank 1 for occasional/single project collaborators (below bronze)
       };
     }
-    
-    // Calculate recency score for each song (0 to 1, where 1 is most recent)
-    const recencyScores = releaseDates.map(date => {
-      const relativePosition = (date - earliestDate) / timespan;
-      return relativePosition;
-    });
     
     // IMPROVED RATING SYSTEM
     // Lower base score per song
