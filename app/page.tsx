@@ -110,23 +110,36 @@ export default function Home() {
         <SearchInput onSearch={handleSearch} isLoading={isLoading} />
       </div>
 
-      {/* First-time search notification */}
-      {isFirstTimeSearch && currentQuery && (
-        <div className="csgo-card-purple mb-8 p-5 max-w-2xl mx-auto">
-          <div className="flex items-center space-x-3 mb-2">
-            <span className="text-2xl">🎉</span>
-            <h3 className="text-xl font-bold text-white">Congratulations!</h3>
+      {/* Loading state */}
+      {isLoading && (
+        <>
+          {/* First-time search notification - MOVED HERE to show during loading */}
+          {isFirstTimeSearch && currentQuery && (
+            <div className="csgo-card-purple mb-8 p-5 max-w-2xl mx-auto">
+              <div className="flex items-center space-x-3 mb-2">
+                <span className="text-2xl">🎉</span>
+                <h3 className="text-xl font-bold text-white">Congratulations!</h3>
+              </div>
+              <p className="text-white mb-2">
+                You are the first person to search for <span className="font-bold">{currentQuery}</span>! 
+              </p>
+              <p className="text-gray-300">
+                Your reward is waiting a little longer because we have no cached information on this artist. (maybe a minute or two) 🕒 
+              </p>
+              <p className="text-gray-300 mt-2">
+                We&apos;re gathering all the data from scratch just for you! 🚀
+              </p>
+            </div>
+          )}
+          
+          <div className="csgo-card p-8 text-center max-w-md mx-auto">
+            <div className="flex justify-center mb-4">
+              <div className="w-10 h-10 border-4 border-gray-600 border-t-blue-500 rounded-full animate-spin"></div>
+            </div>
+            <p className="text-gray-300 font-medium">Searching for producers...</p>
+            <p className="text-gray-400 text-sm mt-2">This may take a minute for popular artists</p>
           </div>
-          <p className="text-white mb-2">
-            You are the first person to search for <span className="font-bold">{currentQuery}</span>! 
-          </p>
-          <p className="text-gray-300">
-            Your reward is waiting a little longer because we have no cached information on this artist. (maybe a minute or two) 🕒 
-          </p>
-          <p className="text-gray-300 mt-2">
-            We're gathering all the data from scratch just for you! 🚀
-          </p>
-        </div>
+        </>
       )}
 
       {/* Performance stats */}
@@ -170,17 +183,6 @@ export default function Home() {
               artistName={artistName || undefined} 
             />
           ))}
-        </div>
-      )}
-
-      {/* Loading state */}
-      {isLoading && (
-        <div className="csgo-card p-8 text-center max-w-md mx-auto">
-          <div className="flex justify-center mb-4">
-            <div className="w-10 h-10 border-4 border-gray-600 border-t-blue-500 rounded-full animate-spin"></div>
-          </div>
-          <p className="text-gray-300 font-medium">Searching for producers...</p>
-          <p className="text-gray-400 text-sm mt-2">This may take a minute for popular artists</p>
         </div>
       )}
 

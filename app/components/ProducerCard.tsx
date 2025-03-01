@@ -93,16 +93,113 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
     ? `${filteredSongs.length} songs with ${artistName} (${producer.notable_songs.length} total)`
     : `${producer.notable_songs.length} tracked songs`;
 
-  // Song quality indicator - more songs means higher "value"
-  const getSongQualityIndicator = () => {
-    const songCount = songsToDisplay.length;
-    if (songCount >= 10) return "★ STattrak™";
-    if (songCount >= 7) return "★ Factory New";
-    if (songCount >= 5) return "Minimal Wear";
-    if (songCount >= 3) return "Field-Tested"; 
-    if (songCount >= 1) return "Well-Worn";
-    return "Battle-Scarred";
+  // NEW: Calculate the "Locked In" rating based on artist timeline
+  const calculateLockedInRating = () => {
+    // If no filtered songs or no artist name, we can't calculate a rating
+    if (!filteredSongs.length || !artistName) {
+      return {
+        score: 0,
+        level: "Not Locked In",
+        color: "text-gray-400"
+      };
+    }
+
+    // Parse release dates from songs and filter out invalid dates
+    const validSongs = filteredSongs.filter(song => song.release_date);
+    
+    if (!validSongs.length) {
+      return {
+        score: 0,
+        level: "No Release Data",
+        color: "text-gray-400"
+      };
+    }
+
+    // Convert release dates to timestamps
+    const releaseDates = validSongs.map(song => {
+      try {
+        return new Date(song.release_date || "").getTime();
+      } catch (_) {
+        // Using underscore to indicate deliberately unused error variable
+        return 0;
+      }
+    }).filter(date => date > 0);
+
+    if (!releaseDates.length) {
+      return {
+        score: 0,
+        level: "No Valid Dates",
+        color: "text-gray-400"
+      };
+    }
+
+    // Find the earliest and latest release dates
+    const earliestDate = Math.min(...releaseDates);
+    const latestDate = Math.max(...releaseDates);
+    
+    // Calculate the total timespan of the artist's career (that we know of)
+    const timespan = latestDate - earliestDate;
+    
+    // If timespan is too small (e.g., only one song or songs released on same day)
+    if (timespan < 1000 * 60 * 60 * 24) { // less than a day
+      return {
+        score: validSongs.length > 2 ? 80 : 50,
+        level: validSongs.length > 2 ? "Frequent Collaborator" : "Occasional Collaborator",
+        color: validSongs.length > 2 ? "text-purple-400" : "text-blue-400"
+      };
+    }
+    
+    // Calculate recency score for each song (0 to 1, where 1 is most recent)
+    const recencyScores = releaseDates.map(date => {
+      const relativePosition = (date - earliestDate) / timespan;
+      return relativePosition;
+    });
+    
+    // Calculate weighted score based on number of songs and their recency
+    const baseScorePerSong = 20; // Base points per song
+    const maxRecencyBonus = 30; // Maximum bonus points for recency
+    
+    // Calculate base score from number of songs
+    const songCountScore = Math.min(65, validSongs.length * baseScorePerSong);
+    
+    // Calculate recency bonus (average of recency scores, weighted toward recent songs)
+    const avgRecency = recencyScores.reduce((sum, score) => sum + score, 0) / recencyScores.length;
+    const recencyBonus = avgRecency * maxRecencyBonus;
+    
+    // Calculate consistency bonus (for working across different periods)
+    const uniqueYears = new Set(validSongs.map(song => song.release_date?.slice(0, 4))).size;
+    const consistencyBonus = Math.min(15, uniqueYears * 5);
+    
+    // Calculate final score (cap at 100)
+    const totalScore = Math.min(100, songCountScore + recencyBonus + consistencyBonus);
+    
+    // Determine "Locked In" level based on score
+    let level, color;
+    if (totalScore >= 90) {
+      level = "Diamond Locked 💎";
+      color = "text-blue-300";
+    } else if (totalScore >= 75) {
+      level = "Platinum Locked ⭐";
+      color = "text-purple-400";
+    } else if (totalScore >= 50) {
+      level = "Gold Locked 🔒";
+      color = "text-yellow-400";
+    } else if (totalScore >= 25) {
+      level = "Silver Locked 🔓";
+      color = "text-gray-300";
+    } else {
+      level = "Bronze Locked 🔗";
+      color = "text-orange-400";
+    }
+    
+    return {
+      score: Math.round(totalScore),
+      level,
+      color
+    };
   };
+
+  const lockedInRating = calculateLockedInRating();
 
   return (
     <div className="csgo-card h-full flex flex-col">
@@ -114,12 +211,28 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               {producer.name} 
-              {songsToDisplay.length >= 5 && <span className="text-yellow-400 text-sm">★</span>}
+              {lockedInRating.score >= 75 && <span className="text-yellow-400 text-sm">★</span>}
             </h2>
-            <p className="text-blue-400 text-sm font-medium">{getSongQualityIndicator()}</p>
+            <p className={`${lockedInRating.color} text-sm font-medium`}>{lockedInRating.level}</p>
             <p className="text-gray-400 text-xs">{songCountText}</p>
           </div>
         </div>
+        
+        {/* NEW: Locked In Rating Bar */}
+        {lockedInRating.score > 0 && (
+          <div className="mb-4 bg-[#1d2136]/70 p-3 rounded-lg">
+            <div className="flex justify-between items-center text-xs mb-1">
+              <span className="text-gray-400">Locked In Rating</span>
+              <span className={`${lockedInRating.color} font-medium`}>{lockedInRating.score}%</span>
+            </div>
+            <div className="h-2 bg-[#232845] rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
+                style={{ width: `${lockedInRating.score}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
         
         {/* Bio section */}
         {producer.bio && (

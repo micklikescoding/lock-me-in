@@ -56,7 +56,7 @@ export interface Song {
 // Helper function for pausing execution
 export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-async function fetchFromGenius(endpoint: string, retryCount = 0): Promise<Record<string, any>> {
+async function fetchFromGenius(endpoint: string, retryCount = 0): Promise<Record<string, unknown>> {
   try {
     const timerLabel = `API:${endpoint.split('?')[0]}`;
     startTimer(timerLabel);
@@ -133,8 +133,8 @@ export async function searchArtist(name: string): Promise<Artist[]> {
     
     // Extract artists from search results
     const artists: Artist[] = data.response.hits
-      .filter((hit: Record<string, any>) => hit.type === 'song')
-      .map((hit: Record<string, any>) => hit.result.primary_artist)
+      .filter((hit: Record<string, unknown>) => hit.type === 'song')
+      .map((hit: Record<string, unknown>) => hit.result.primary_artist)
       // Remove duplicates based on artist ID
       .filter((artist: Artist, index: number, self: Artist[]) => 
         index === self.findIndex((a) => a.id === artist.id)
