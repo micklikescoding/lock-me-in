@@ -21,13 +21,16 @@ export default function Home() {
 
   // Load previously searched artists from localStorage on mount (only used for UI display)
   useEffect(() => {
-    try {
-      const cached = localStorage.getItem('knownSearches');
-      if (cached) {
-        setKnownSearches(new Set(JSON.parse(cached)));
+    // Only run on client-side, never during SSR
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('knownSearches');
+        if (cached) {
+          setKnownSearches(new Set(JSON.parse(cached)));
+        }
+      } catch (error) {
+        console.error('Failed to load searches from localStorage', error);
       }
-    } catch (error) {
-      console.error('Failed to load searches from localStorage', error);
     }
   }, []);
 
@@ -59,10 +62,13 @@ export default function Home() {
       newKnownSearches.add(query.toLowerCase());
       setKnownSearches(newKnownSearches);
       
-      try {
-        localStorage.setItem('knownSearches', JSON.stringify([...newKnownSearches]));
-      } catch (error) {
-        console.error('Failed to save to localStorage', error);
+      // Only run on client-side
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('knownSearches', JSON.stringify([...newKnownSearches]));
+        } catch (error) {
+          console.error('Failed to save to localStorage', error);
+        }
       }
       
     } catch (err) {
