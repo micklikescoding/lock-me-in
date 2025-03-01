@@ -46,8 +46,23 @@ export async function GET(request: Request) {
     const producers = await getProducersFromSongs(songs);
     logInfo(`Found ${producers.length} producers`);
 
-    // Sort producers by number of songs
-    producers.sort((a, b) => b.notable_songs.length - a.notable_songs.length);
+    // Create a context-aware version of the producers for this specific artist
+    // This ensures songs are properly filtered for this artist regardless of cache state
+    const contextProducers = producers.map(producer => {
+      // Create a deep copy of the producer to avoid modifying the cached version
+      return {
+        ...producer,
+        // Filter notable songs to only include songs from the searched artist
+        notable_songs: producer.notable_songs.filter(song => 
+          song.artist.toLowerCase() === artist.name.toLowerCase() ||
+          // Also match using word boundaries to catch exact artist name
+          new RegExp(`\\b${artist.name.toLowerCase()}\\b`, 'i').test(song.artist.toLowerCase())
+        )
+      };
+    }).filter(producer => producer.notable_songs.length > 0);
+
+    // Sort producers by number of songs for this specific artist
+    contextProducers.sort((a, b) => b.notable_songs.length - a.notable_songs.length);
 
     // End the timer for the entire search request
     const duration = endTimer('API:search');
@@ -58,11 +73,11 @@ export async function GET(request: Request) {
         name: artist.name,
         image_url: artist.image_url
       },
-      producers,
+      producers: contextProducers,
       performance: {
         total_time_ms: duration,
         song_count: songs.length,
-        producer_count: producers.length
+        producer_count: contextProducers.length
       }
     });
   } catch (error) {

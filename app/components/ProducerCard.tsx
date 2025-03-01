@@ -7,16 +7,37 @@ import { LinkIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/ou
 
 interface ProducerCardProps {
   producer: Producer;
+  artistName?: string; 
 }
 
-export default function ProducerCard({ producer }: ProducerCardProps) {
+export default function ProducerCard({ producer, artistName }: ProducerCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
+  // Filter notable songs to only show those matching the searched artist if artistName is provided
+  const filteredSongs = artistName 
+    ? producer.notable_songs.filter(song => {
+        // This is the current search context - the artist the user searched for
+        const currentSearchArtist = artistName.toLowerCase().trim();
+        
+        // The artist of this particular song
+        const songArtist = song.artist.toLowerCase().trim();
+        
+        // STRICT MATCHING: We only want songs where the artist exactly matches the searched artist
+        // or where the artist name is a substring surrounded by word boundaries
+        return songArtist === currentSearchArtist || 
+               // Check if it's an exact match for the artist name as a whole word
+               new RegExp(`\\b${currentSearchArtist}\\b`, 'i').test(songArtist);
+      })
+    : producer.notable_songs;
+  
+  // Always use filtered songs - no fallback
+  const songsToDisplay = filteredSongs;
+  
   // Only show top 3 songs by default, show all when expanded
   const visibleSongs = expanded 
-    ? producer.notable_songs 
-    : producer.notable_songs.slice(0, 3);
+    ? songsToDisplay 
+    : songsToDisplay.slice(0, 3);
 
   // Format social media links
   const instagramUrl = producer.instagram_name
@@ -67,6 +88,11 @@ export default function ProducerCard({ producer }: ProducerCardProps) {
     );
   };
 
+  // Counter text: show filtering context if filtered
+  const songCountText = filteredSongs.length > 0 && filteredSongs.length !== producer.notable_songs.length
+    ? `${filteredSongs.length} songs with ${artistName} (${producer.notable_songs.length} total)`
+    : `${producer.notable_songs.length} tracked songs`;
+
   return (
     <div className="bg-gray-800 rounded-lg overflow-hidden shadow-lg border border-gray-700 hover:border-gray-500 transition-all">
       <div className="p-5">
@@ -76,7 +102,7 @@ export default function ProducerCard({ producer }: ProducerCardProps) {
           
           <div>
             <h2 className="text-xl font-bold text-white">{producer.name}</h2>
-            <p className="text-gray-400 text-sm">{producer.notable_songs.length} tracked songs</p>
+            <p className="text-gray-400 text-sm">{songCountText}</p>
           </div>
         </div>
         
@@ -132,20 +158,27 @@ export default function ProducerCard({ producer }: ProducerCardProps) {
         {/* Notable songs */}
         <div>
           <h3 className="text-md font-semibold text-gray-300 mb-2">Notable Songs</h3>
-          <ul className="space-y-2">
-            {visibleSongs.map((song, index) => (
-              <li key={index} className="bg-gray-700 p-2 rounded text-sm">
-                <div className="font-medium">{song.title}</div>
-                <div className="text-gray-400 text-xs">by {song.artist}</div>
-                {song.release_date && (
-                  <div className="text-gray-500 text-xs">{song.release_date}</div>
-                )}
-              </li>
-            ))}
-          </ul>
+          
+          {songsToDisplay.length > 0 ? (
+            <ul className="space-y-2">
+              {visibleSongs.map((song, index) => (
+                <li key={index} className="bg-gray-700 p-2 rounded text-sm">
+                  <div className="font-medium">{song.title}</div>
+                  <div className="text-gray-400 text-xs">by {song.artist}</div>
+                  {song.release_date && (
+                    <div className="text-gray-500 text-xs">{song.release_date}</div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-gray-500 text-sm italic p-2">
+              No notable songs with {artistName} in our database yet.
+            </div>
+          )}
           
           {/* Show more/less button if there are more than 3 songs */}
-          {producer.notable_songs.length > 3 && (
+          {songsToDisplay.length > 3 && (
             <button
               onClick={() => setExpanded(!expanded)}
               className="w-full mt-3 py-1 text-xs text-gray-400 hover:text-white flex items-center justify-center gap-1"
