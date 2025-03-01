@@ -66,7 +66,7 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
   const renderAvatar = () => {
     if (hasValidImage && producer.image_url) {
       return (
-        <div className="w-16 h-16 relative rounded-full overflow-hidden flex-shrink-0">
+        <div className="w-16 h-16 relative rounded-full overflow-hidden flex-shrink-0 border-2 border-[#36416e] shadow-lg">
           <Image 
             src={producer.image_url}
             alt={producer.name}
@@ -82,7 +82,7 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
     
     // Fallback avatar with initial
     return (
-      <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center text-2xl font-bold flex-shrink-0">
+      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#323b6a] to-[#232845] flex items-center justify-center text-2xl font-bold flex-shrink-0 border-2 border-[#36416e] shadow-lg">
         {producer.name.charAt(0)}
       </div>
     );
@@ -93,23 +93,40 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
     ? `${filteredSongs.length} songs with ${artistName} (${producer.notable_songs.length} total)`
     : `${producer.notable_songs.length} tracked songs`;
 
+  // Song quality indicator - more songs means higher "value"
+  const getSongQualityIndicator = () => {
+    const songCount = songsToDisplay.length;
+    if (songCount >= 10) return "★ STattrak™";
+    if (songCount >= 7) return "★ Factory New";
+    if (songCount >= 5) return "Minimal Wear";
+    if (songCount >= 3) return "Field-Tested"; 
+    if (songCount >= 1) return "Well-Worn";
+    return "Battle-Scarred";
+  };
+
   return (
-    <div className="bg-gray-800 rounded-lg overflow-hidden shadow-lg border border-gray-700 hover:border-gray-500 transition-all">
-      <div className="p-5">
+    <div className="csgo-card h-full flex flex-col">
+      <div className="p-5 flex-grow">
         {/* Producer header with image and name */}
         <div className="flex items-center gap-4 mb-4">
           {renderAvatar()}
           
           <div>
-            <h2 className="text-xl font-bold text-white">{producer.name}</h2>
-            <p className="text-gray-400 text-sm">{songCountText}</p>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              {producer.name} 
+              {songsToDisplay.length >= 5 && <span className="text-yellow-400 text-sm">★</span>}
+            </h2>
+            <p className="text-blue-400 text-sm font-medium">{getSongQualityIndicator()}</p>
+            <p className="text-gray-400 text-xs">{songCountText}</p>
           </div>
         </div>
         
         {/* Bio section */}
         {producer.bio && (
-          <div className="mb-4">
-            <h3 className="text-md font-semibold text-gray-300 mb-1">Bio</h3>
+          <div className="mb-4 bg-[#1d2136]/50 p-3 rounded-lg">
+            <h3 className="text-md font-semibold text-gray-300 mb-1 flex items-center">
+              <span className="text-sm mr-1">🎤</span> Bio
+            </h3>
             <p className="text-gray-400 text-sm line-clamp-3">
               {producer.bio}
             </p>
@@ -123,7 +140,7 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
               href={producer.genius_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 px-3 py-1 bg-gray-700 rounded-full text-xs hover:bg-gray-600 transition-colors"
+              className="flex items-center gap-1 px-3 py-1 bg-[#2a3154] rounded-full text-xs hover:bg-[#36416e] transition-colors"
             >
               <span>Genius</span>
               <LinkIcon className="w-3 h-3" />
@@ -135,7 +152,7 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
               href={instagramUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 px-3 py-1 bg-gray-700 rounded-full text-xs hover:bg-gray-600 transition-colors"
+              className="flex items-center gap-1 px-3 py-1 bg-[#2a3154] rounded-full text-xs hover:bg-[#36416e] transition-colors"
             >
               <span>Instagram</span>
               <LinkIcon className="w-3 h-3" />
@@ -147,7 +164,7 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
               href={twitterUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 px-3 py-1 bg-gray-700 rounded-full text-xs hover:bg-gray-600 transition-colors"
+              className="flex items-center gap-1 px-3 py-1 bg-[#2a3154] rounded-full text-xs hover:bg-[#36416e] transition-colors"
             >
               <span>Twitter</span>
               <LinkIcon className="w-3 h-3" />
@@ -157,14 +174,16 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
         
         {/* Notable songs */}
         <div>
-          <h3 className="text-md font-semibold text-gray-300 mb-2">Notable Songs</h3>
+          <h3 className="text-md font-semibold text-white mb-2 flex items-center">
+            <span className="text-sm mr-1">🎵</span> Notable Songs
+          </h3>
           
           {songsToDisplay.length > 0 ? (
             <ul className="space-y-2">
               {visibleSongs.map((song, index) => (
-                <li key={index} className="bg-gray-700 p-2 rounded text-sm">
-                  <div className="font-medium">{song.title}</div>
-                  <div className="text-gray-400 text-xs">by {song.artist}</div>
+                <li key={index} className="bg-[#1d2136]/70 p-3 rounded-lg text-sm border border-[#2a305a]/30 hover:border-[#36416e]/50 transition-all">
+                  <div className="font-medium text-white">{song.title}</div>
+                  <div className="text-blue-400 text-xs">by {song.artist}</div>
                   {song.release_date && (
                     <div className="text-gray-500 text-xs">{song.release_date}</div>
                   )}
@@ -176,23 +195,25 @@ export default function ProducerCard({ producer, artistName }: ProducerCardProps
               No notable songs with {artistName} in our database yet.
             </div>
           )}
-          
-          {/* Show more/less button if there are more than 3 songs */}
-          {songsToDisplay.length > 3 && (
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="w-full mt-3 py-1 text-xs text-gray-400 hover:text-white flex items-center justify-center gap-1"
-            >
-              <span>{expanded ? 'Show less' : 'Show more'}</span>
-              {expanded ? (
-                <ChevronUpIcon className="w-4 h-4" />
-              ) : (
-                <ChevronDownIcon className="w-4 h-4" />
-              )}
-            </button>
-          )}
         </div>
       </div>
+      
+      {/* Show more/less button if there are more than 3 songs */}
+      {songsToDisplay.length > 3 && (
+        <div className="bg-[#1d2136] border-t border-[#2a305a] px-4 py-2 rounded-b-xl">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="w-full py-1 text-xs text-gray-300 hover:text-white flex items-center justify-center gap-1 transition-colors"
+          >
+            <span>{expanded ? 'Show less' : `Show ${songsToDisplay.length - 3} more songs`}</span>
+            {expanded ? (
+              <ChevronUpIcon className="w-4 h-4" />
+            ) : (
+              <ChevronDownIcon className="w-4 h-4" />
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 } 

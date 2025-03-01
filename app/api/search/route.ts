@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { searchArtist, getAllArtistSongs, getProducersFromSongs } from '@/app/lib/genius';
 import { logInfo, logError, startTimer, endTimer } from '@/app/lib/logger';
+import { artistSongsCache } from '@/app/lib/cache';
 
 export async function GET(request: Request) {
   // Start a timer for the entire search request
@@ -36,6 +37,10 @@ export async function GET(request: Request) {
     const artist = artists[0];
     logInfo(`Found artist: ${artist.name}`, { artistId: artist.id });
 
+    // Check if this is a first-time search by checking if artist songs are in cache
+    const isFirstTimeSearch = !artistSongsCache.get(artist.id.toString());
+    logInfo(`First time search for ${artist.name}: ${isFirstTimeSearch}`);
+    
     // Get the first artist's songs
     logInfo(`Fetching songs for artist: ${artist.name}`, { artistId: artist.id });
     const songs = await getAllArtistSongs(artist.id);
@@ -78,7 +83,8 @@ export async function GET(request: Request) {
         total_time_ms: duration,
         song_count: songs.length,
         producer_count: contextProducers.length
-      }
+      },
+      isFirstTimeSearch: isFirstTimeSearch
     });
   } catch (error) {
     logError('Search error:', error);

@@ -6,9 +6,9 @@
 }
 
 :root {
-  --background: 222.2 84% 4.9%;
+  --background: 222 47% 11%;
   --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
+  --card: 224 71% 4%;
   --card-foreground: 210 40% 98%;
   --popover: 222.2 84% 4.9%;
   --popover-foreground: 210 40% 98%;
@@ -18,18 +18,25 @@
   --secondary-foreground: 210 40% 98%;
   --muted: 217.2 32.6% 17.5%;
   --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
+  --accent: 262 83% 58%;
   --accent-foreground: 210 40% 98%;
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 210 40% 98%;
   --border: 217.2 32.6% 17.5%;
   --input: 217.2 32.6% 17.5%;
   --ring: 224.3 76.3% 48%;
+  
+  /* Custom theme colors matching CSGO skin site */
+  --blue-accent: 210 100% 60%;
+  --purple-accent: 262 83% 58%;
+  --red-accent: 0 83% 62%;
+  --card-gradient-from: 224 59% 16%;
+  --card-gradient-to: 222 47% 11%;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #171c2c;
     --foreground: #ededed;
   }
 }
@@ -38,6 +45,11 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  background-image: radial-gradient(
+    circle at 0% 0%,
+    rgba(29, 35, 59, 0.8) 0%,
+    rgba(23, 28, 44, 1) 100%
+  );
 }
 
 /* Additional global styles */
@@ -50,5 +62,30 @@ body {
 @layer components {
   .container {
     @apply max-w-[1200px] mx-auto px-4;
+  }
+  
+  /* Card styles matching CSGO skin site */
+  .csgo-card {
+    @apply bg-gradient-to-b from-[#232845] to-[#1d233b] rounded-xl border border-[#2a305a] shadow-lg hover:shadow-xl transition-all duration-300 hover:border-[#36416e] overflow-hidden;
+  }
+  
+  .csgo-card-blue {
+    @apply bg-gradient-to-b from-[#1e4584] to-[#1a3c74] rounded-xl border border-[#2658a9] shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+  
+  .csgo-card-purple {
+    @apply bg-gradient-to-b from-[#4f268f] to-[#3e1f70] rounded-xl border border-[#6035a9] shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+  
+  .csgo-card-red {
+    @apply bg-gradient-to-b from-[#972d3e] to-[#7d2633] rounded-xl border border-[#b03a4a] shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+  
+  .stat-box {
+    @apply p-3 rounded-lg bg-[#232845]/60 border border-[#2a305a]/50;
+  }
+  
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r;
   }
 }
