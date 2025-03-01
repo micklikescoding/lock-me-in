@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import SearchInput from './components/SearchInput';
 import ProducerCard from './components/ProducerCard';
 import PerformanceStats from './components/PerformanceStats';
@@ -12,11 +12,26 @@ export default function Home() {
   const [producers, setProducers] = useState<Producer[]>([]);
   const [artistName, setArtistName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isFirstTimeSearch, setIsFirstTimeSearch] = useState<boolean>(false);
+  const [currentQuery, setCurrentQuery] = useState<string | null>(null);
+  const [knownSearches, setKnownSearches] = useState<Set<string>>(new Set());
   const [performance, setPerformance] = useState<{
     total_time_ms: number;
     song_count: number;
     producer_count: number;
   } | null>(null);
+
+  // Load previously searched artists from localStorage on mount (only used for UI display)
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem('knownSearches');
+      if (cached) {
+        setKnownSearches(new Set(JSON.parse(cached)));
+      }
+    } catch (error) {
+      console.error('Failed to load searches from localStorage', error);
+    }
+  }, []);
 
   // Handle the search submission
   const handleSearch = async (query: string) => {
@@ -26,6 +41,14 @@ export default function Home() {
     setProducers([]);
     setArtistName(null);
     setPerformance(null);
+    
+    // Store the current query
+    setCurrentQuery(query);
+    
+    // Set provisional first-time status for UI purposes
+    // We'll show the message during loading if we've never seen this search locally
+    const mightBeFirstTime = !knownSearches.has(query.toLowerCase());
+    setIsFirstTimeSearch(mightBeFirstTime);
 
     try {
       // Call the search API endpoint
@@ -40,9 +63,30 @@ export default function Home() {
       setProducers(data.producers);
       setArtistName(data.artist.name);
       setPerformance(data.performance);
+      
+      // Get the server's definitive answer
+      const isActuallyFirstTime = data.isFirstTimeSearch;
+      
+      // Update our local knowledge
+      if (isActuallyFirstTime || mightBeFirstTime) {
+        const newKnownSearches = new Set(knownSearches);
+        newKnownSearches.add(query.toLowerCase());
+        setKnownSearches(newKnownSearches);
+        
+        try {
+          localStorage.setItem('knownSearches', JSON.stringify([...newKnownSearches]));
+        } catch (error) {
+          console.error('Failed to save to localStorage', error);
+        }
+      }
+      
+      // Keep showing the first-time message if the server confirms it was first time
+      setIsFirstTimeSearch(isActuallyFirstTime);
     } catch (err) {
       // Handle any errors
       setError(err instanceof Error ? err.message : 'An error occurred');
+      // Reset first-time flag on error
+      setIsFirstTimeSearch(false);
     } finally {
       // Set loading to false regardless of outcome
       setIsLoading(false);
@@ -50,11 +94,11 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen p-4 sm:p-6">
       {/* Header section */}
-      <header className="mb-12 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
-          Lock Me In
+      <header className="mb-8 text-center">
+        <h1 className="text-4xl md:text-5xl font-bold mb-4 gradient-text from-blue-400 to-purple-600">
+          Lock Me In 🎵
         </h1>
         <p className="text-xl text-gray-300 max-w-2xl mx-auto">
           Find producers who have worked with your favorite artists
@@ -62,9 +106,28 @@ export default function Home() {
       </header>
 
       {/* Search input */}
-      <div className="mb-10">
+      <div className="mb-10 max-w-xl mx-auto">
         <SearchInput onSearch={handleSearch} isLoading={isLoading} />
       </div>
+
+      {/* First-time search notification */}
+      {isFirstTimeSearch && currentQuery && (
+        <div className="csgo-card-purple mb-8 p-5 max-w-2xl mx-auto">
+          <div className="flex items-center space-x-3 mb-2">
+            <span className="text-2xl">🎉</span>
+            <h3 className="text-xl font-bold text-white">Congratulations!</h3>
+          </div>
+          <p className="text-white mb-2">
+            You are the first person to search for <span className="font-bold">{currentQuery}</span>! 
+          </p>
+          <p className="text-gray-300">
+            Your reward is waiting a little longer because we have no cached information on this artist. (maybe a minute or two) 🕒 
+          </p>
+          <p className="text-gray-300 mt-2">
+            We're gathering all the data from scratch just for you! 🚀
+          </p>
+        </div>
+      )}
 
       {/* Performance stats */}
       {performance && (
@@ -78,8 +141,10 @@ export default function Home() {
       {/* Results heading */}
       {artistName && producers.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-2xl font-semibold">
-            Producers who worked with <span className="text-blue-400">{artistName}</span>
+          <h2 className="text-2xl font-semibold flex items-center">
+            Producers who worked with 
+            <span className="gradient-text from-blue-400 to-purple-500 ml-2">{artistName}</span>
+            <span className="ml-2">🔥</span>
           </h2>
           <p className="text-gray-400">Found {producers.length} producers</p>
         </div>
@@ -87,8 +152,11 @@ export default function Home() {
 
       {/* Error message */}
       {error && (
-        <div className="text-center p-4 bg-red-900/30 border border-red-700 rounded-lg mb-8">
-          <p className="text-red-400">{error}</p>
+        <div className="csgo-card-red p-5 mb-8 max-w-2xl mx-auto">
+          <div className="flex items-center space-x-3">
+            <span className="text-2xl">⚠️</span>
+            <p className="text-white font-semibold">{error}</p>
+          </div>
         </div>
       )}
 
@@ -96,25 +164,32 @@ export default function Home() {
       {producers.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {producers.map((producer) => (
-            <ProducerCard key={producer.id} producer={producer} />
+            <ProducerCard 
+              key={producer.id} 
+              producer={producer} 
+              artistName={artistName || undefined} 
+            />
           ))}
         </div>
       )}
 
       {/* Loading state */}
       {isLoading && (
-        <div className="text-center p-12">
-          <div className="inline-block w-8 h-8 border-4 border-gray-600 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-          <p className="text-gray-400">Searching for producers...</p>
-          <p className="text-gray-500 text-sm mt-2">This may take a minute for popular artists</p>
+        <div className="csgo-card p-8 text-center max-w-md mx-auto">
+          <div className="flex justify-center mb-4">
+            <div className="w-10 h-10 border-4 border-gray-600 border-t-blue-500 rounded-full animate-spin"></div>
+          </div>
+          <p className="text-gray-300 font-medium">Searching for producers...</p>
+          <p className="text-gray-400 text-sm mt-2">This may take a minute for popular artists</p>
         </div>
       )}
 
       {/* Empty state */}
       {!isLoading && !error && producers.length === 0 && !artistName && (
-        <div className="text-center text-gray-400 p-12 border border-gray-800 rounded-lg">
-          <p>Search for an artist to discover producers who have worked with them</p>
-          <p className="text-sm mt-2 text-gray-500">
+        <div className="csgo-card p-8 text-center max-w-xl mx-auto">
+          <div className="text-5xl mb-4">🎧</div>
+          <p className="text-gray-300 font-medium mb-2">Search for an artist to discover producers who have worked with them</p>
+          <p className="text-sm text-gray-400">
             Try artists like Drake, Taylor Swift, or Kendrick Lamar
           </p>
         </div>
@@ -122,9 +197,10 @@ export default function Home() {
 
       {/* No results found */}
       {!isLoading && !error && producers.length === 0 && artistName && (
-        <div className="text-center text-gray-400 p-8 border border-gray-800 rounded-lg">
-          <p>No producers found for {artistName}</p>
-          <p className="text-sm mt-2 text-gray-500">
+        <div className="csgo-card p-8 text-center max-w-xl mx-auto">
+          <div className="text-5xl mb-4">🔍</div>
+          <p className="text-gray-300 font-medium mb-2">No producers found for {artistName}</p>
+          <p className="text-sm text-gray-400">
             Try searching for a different artist
           </p>
         </div>
